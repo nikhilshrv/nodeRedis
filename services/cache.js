@@ -19,7 +19,9 @@ mongoose.Query.prototype.exec = async function () {
 	const cachedResult = client.get(key);
 
 	if (cachedResult) {
-		console.log('The cachedResult is: ', cachedResult)
+		console.log('The cachedResult is: ', cachedResult);
+		const doc = JSON.parse(cachedResult);
+		return this.model(doc);
 	} else {
 		console.log('No cache data');
 		const result = await exec.apply(this, arguments);
