@@ -12,27 +12,29 @@ const exec = mongoose.Query.prototype.exec;
 mongoose.Query.prototype.cache = function (options = {}) {
 	this.useCache = true;
 	this.hashKey = JSON.stringify(options.key || '');
-	
 	return this;
 }
 
 mongoose.Query.prototype.exec = async function () {
 
 	if (this.useCache) {
-		console.log('The query is: ', this.getQuery(), this.mongooseCollection.name);
+		// console.log('The query is: ', this.getQuery(), this.mongooseCollection.name);
 		const key = JSON.stringify(Object.assign({},this.getQuery(), {
 			collection: this.mongooseCollection.name
-		}));
-		const cachedResult = await client.hget(this.hashkey, key);
+        }));
+        console.log('The hashkey and key is: ', this.hashKey, key);
+		const cachedResult = await client.hget(this.hashKey, key);
 
 		if (cachedResult) {
 			console.log('The cachedResult is: ', cachedResult);
 			const doc = JSON.parse(cachedResult);
-			return Array.isArray(doc) ? doc.map(d => this.model(d)) : this.model(doc);
+			return Array.isArray(doc) ?
+			    doc.map(d => this.model(d)) :
+			    this.model(doc);
 		} else {
-			console.log('No cache data');
 			const result = await exec.apply(this, arguments);
-			client.hset(this.hashkey, key, JSON.stringify(result));
+			client.hset(this.hashKey, key, JSON.stringify(result));
+			console.log('returning from query ', result);
 			return result;
 		}
 
@@ -40,4 +42,11 @@ mongoose.Query.prototype.exec = async function () {
 		return exec.apply(this, arguments);
 	}	
 
+}
+
+module.exports = {
+	clearHash(hashKey) {
+		console.log('clear has called', hashKey);
+		client.del(JSON.stringify(hashKey));
+	}
 }
